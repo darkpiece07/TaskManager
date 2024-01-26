@@ -3,6 +3,7 @@ from django.http import HttpResponse, JsonResponse
 from .models import Task
 from django.views.decorators.csrf import csrf_exempt
 import json
+from django.utils import timezone
 
 def index(request):
     context = {}
@@ -78,3 +79,46 @@ def deleteTask(request, task_id):
     
     except Task.DoesNotExist:
         return JsonResponse({"message": "Task does not exist, provide an existing task id."})
+    
+
+
+# Update an existing Task with its id provided
+@csrf_exempt
+def updateTask(request, task_id):
+    data = {'success': False, 'message': "Failed to update task."}
+
+    if request.method == "POST":
+        try:
+            task = Task.objects.get(id=task_id)
+
+            title = request.POST.get("title")
+            description = request.POST.get("description")
+            due_date = request.POST.get("due_date")
+            status = request.POST.get("status")
+            
+            if title:
+                task.title = title
+            if description:
+                task.description = description
+
+            if due_date:
+                task.due_date = timezone.datetime.strptime(due_date, '%Y-%m-%d').date()
+
+            if status:
+                task.status = status
+            task.save()
+            data = {
+                "success": True,
+                "id": task.id,
+                "title": task.title,
+                "description": task.description,
+                "due_date": task.due_date,
+                "status": task.status,
+                "message": "Task updated successfully."
+            }
+        except Task.DoesNotExist:
+            data['message'] = f"Task with ID {task_id} does not exist."
+        except Exception as e:
+            data['message'] = f"Error: {str(e)}"
+
+    return JsonResponse({"data": data})
