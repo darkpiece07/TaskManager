@@ -37,3 +37,22 @@ def addTask(request):
 
     return JsonResponse({"data": data})
 
+
+
+# Need to apply authentication on all APIs
+# Get a single task by task_id
+def getTask(request, task_id):
+    try:
+        task = Task.objects.get(id = task_id)
+        task_data = {
+            "id": task.id,
+            "title": task.title,
+            "description": task.description,
+            "due_date": task.due_date,
+            "status": task.status
+        }
+        return JsonResponse({"task": task_data}, status=200)
+    
+    except Task.DoesNotExist:
+        return JsonResponse({"data": "task id does not exist!"}, status = 404)
+    
