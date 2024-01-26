@@ -56,3 +56,10 @@ def getTask(request, task_id):
     except Task.DoesNotExist:
         return JsonResponse({"data": "task id does not exist!"}, status = 404)
     
+
+
+# List all tasks
+def allTasks(request):
+    tasks = Task.objects.all()
+    task_list = [{'id': task.id, 'title': task.title, 'description': task.description, 'due_date': task.due_date, 'status': task.status} for task in tasks]
+    return JsonResponse({"tasks": task_list})
