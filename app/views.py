@@ -24,7 +24,9 @@ def addTask(request):
         
         description = request.POST.get("description")
         due_date = request.POST.get("due_date")
-        task = Task(title = title, description = description, due_date = due_date)
+        status = request.POST.get("status")
+        print(status)
+        task = Task(title = title, description = description, due_date = due_date, status = status)
         task.save()
         data = {
             "success": True,
@@ -63,3 +65,16 @@ def allTasks(request):
     tasks = Task.objects.all()
     task_list = [{'id': task.id, 'title': task.title, 'description': task.description, 'due_date': task.due_date, 'status': task.status} for task in tasks]
     return JsonResponse({"tasks": task_list})
+
+
+
+
+# Delete a single task by task_id
+def deleteTask(request, task_id):
+    try:
+        task = Task.objects.get(id = task_id)
+        task.delete()
+        return JsonResponse({"message": "Task deleted!"})
+    
+    except Task.DoesNotExist:
+        return JsonResponse({"message": "Task does not exist, provide an existing task id."})
