@@ -5,9 +5,19 @@ from django.views.decorators.csrf import csrf_exempt
 import json
 from django.utils import timezone
 
-def index(request):
-    context = {}
-    return render(request, 'app/index.html', context)
+from rest_framework.authtoken.views import ObtainAuthToken
+from rest_framework.authtoken.models import Token
+from rest_framework.response import Response
+
+# from rest_framework.authentication import TokenAuthentication
+# from rest_framework.permissions import IsAuthenticated
+
+from rest_framework.decorators import authentication_classes, permission_classes
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.permissions import IsAuthenticated
+
+
+from rest_framework.views import APIView
 
 
 # Create a task
@@ -62,10 +72,13 @@ def getTask(request, task_id):
 
 
 # List all tasks
-def allTasks(request):
-    tasks = Task.objects.all()
-    task_list = [{'id': task.id, 'title': task.title, 'description': task.description, 'due_date': task.due_date, 'status': task.status} for task in tasks]
-    return JsonResponse({"tasks": task_list})
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+class ExampleClassBasedView(APIView):
+    def get(self, request):
+        tasks = Task.objects.all()
+        task_list = [{'id': task.id, 'title': task.title, 'description': task.description, 'due_date': task.due_date, 'status': task.status} for task in tasks]
+        return JsonResponse({"tasks": task_list})
 
 
 
@@ -83,7 +96,7 @@ def deleteTask(request, task_id):
 
 
 # Update an existing Task with its id provided
-@csrf_exempt
+# @csrf_exempt
 def updateTask(request, task_id):
     data = {'success': False, 'message': "Failed to update task."}
 
@@ -122,3 +135,22 @@ def updateTask(request, task_id):
             data['message'] = f"Error: {str(e)}"
 
     return JsonResponse({"data": data})
+
+
+
+
+
+class CustomAuthTokenLogin(ObtainAuthToken):
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data['user']
+        token, created = Token.objects.get_or_create(user=user)
+        return Response({
+            'token': token.key,
+            'user_id': user.pk,
+            'email': user.email,
+            'username': user.username,
+            'firstname': user.first_name,
+            'lastname': user.last_name
+        })
